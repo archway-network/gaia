@@ -76,6 +76,9 @@ import (
 	upgradeclient "github.com/cosmos/cosmos-sdk/x/upgrade/client"
 	upgradekeeper "github.com/cosmos/cosmos-sdk/x/upgrade/keeper"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
+	"github.com/cosmos/gaia/v7/x/chat"
+	chatkeeper "github.com/cosmos/gaia/v7/x/chat/keeper"
+	chattypes "github.com/cosmos/gaia/v7/x/chat/types"
 	ica "github.com/cosmos/ibc-go/v3/modules/apps/27-interchain-accounts"
 	icacontrollertypes "github.com/cosmos/ibc-go/v3/modules/apps/27-interchain-accounts/controller/types"
 	icahost "github.com/cosmos/ibc-go/v3/modules/apps/27-interchain-accounts/host"
@@ -151,6 +154,7 @@ var (
 		liquidity.AppModuleBasic{},
 		router.AppModuleBasic{},
 		ica.AppModuleBasic{},
+		chat.AppModuleBasic{},
 	)
 
 	// module account permissions
@@ -209,6 +213,8 @@ type GaiaApp struct { // nolint: golint
 	AuthzKeeper     authzkeeper.Keeper
 	LiquidityKeeper liquiditykeeper.Keeper
 	RouterKeeper    routerkeeper.Keeper
+	//
+	ChatKeeper chatkeeper.Keeper
 
 	// make scoped keepers public for test purposes
 	ScopedIBCKeeper      capabilitykeeper.ScopedKeeper
@@ -260,6 +266,7 @@ func NewGaiaApp(
 		govtypes.StoreKey, paramstypes.StoreKey, ibchost.StoreKey, upgradetypes.StoreKey,
 		evidencetypes.StoreKey, liquiditytypes.StoreKey, ibctransfertypes.StoreKey,
 		capabilitytypes.StoreKey, feegrant.StoreKey, authzkeeper.StoreKey, routertypes.StoreKey, icahosttypes.StoreKey,
+		chattypes.StoreKey,
 	)
 	tkeys := sdk.NewTransientStoreKeys(paramstypes.TStoreKey)
 	memKeys := sdk.NewMemoryStoreKeys(capabilitytypes.MemStoreKey)
@@ -292,6 +299,7 @@ func NewGaiaApp(
 	scopedIBCKeeper := app.CapabilityKeeper.ScopeToModule(ibchost.ModuleName)
 	scopedTransferKeeper := app.CapabilityKeeper.ScopeToModule(ibctransfertypes.ModuleName)
 	scopedICAHostKeeper := app.CapabilityKeeper.ScopeToModule(icahosttypes.SubModuleName)
+	scopedChatKeeper := app.CapabilityKeeper.ScopeToModule(chattypes.ModuleName)
 	app.CapabilityKeeper.Seal()
 
 	// add keepers
@@ -433,13 +441,23 @@ func NewGaiaApp(
 	icaModule := ica.NewAppModule(nil, &app.ICAHostKeeper)
 	icaHostIBCModule := icahost.NewIBCModule(app.ICAHostKeeper)
 
+	app.ChatKeeper = chatkeeper.NewKeeper(
+		appCodec,
+		keys[chattypes.StoreKey],
+		app.IBCKeeper.ChannelKeeper,
+		&app.IBCKeeper.PortKeeper,
+		scopedChatKeeper,
+	)
+	chatIBCModule := chat.NewIBCModule(app.ChatKeeper)
+
 	app.RouterKeeper = routerkeeper.NewKeeper(appCodec, keys[routertypes.StoreKey], app.GetSubspace(routertypes.ModuleName), app.TransferKeeper, app.DistrKeeper)
 
 	routerModule := router.NewAppModule(app.RouterKeeper, transferIBCModule)
 	// create static IBC router, add transfer route, then set and seal it
 	ibcRouter := porttypes.NewRouter()
 	ibcRouter.AddRoute(icahosttypes.SubModuleName, icaHostIBCModule).
-		AddRoute(ibctransfertypes.ModuleName, transferIBCModule)
+		AddRoute(ibctransfertypes.ModuleName, transferIBCModule).
+		AddRoute(chattypes.ModuleName, chatIBCModule)
 
 	app.IBCKeeper.SetRouter(ibcRouter)
 
@@ -484,6 +502,7 @@ func NewGaiaApp(
 		transferModule,
 		icaModule,
 		routerModule,
+		chat.NewAppModule(appCodec, app.ChatKeeper),
 	)
 
 	// During begin block slashing happens after distr.BeginBlocker so that
@@ -514,6 +533,8 @@ func NewGaiaApp(
 		feegrant.ModuleName,
 		paramstypes.ModuleName,
 		vestingtypes.ModuleName,
+		//
+		chattypes.ModuleName,
 	)
 	app.mm.SetOrderEndBlockers(
 		crisistypes.ModuleName,
@@ -537,6 +558,8 @@ func NewGaiaApp(
 		paramstypes.ModuleName,
 		upgradetypes.ModuleName,
 		vestingtypes.ModuleName,
+		//
+		chattypes.ModuleName,
 	)
 
 	// NOTE: The genutils module must occur after staking so that pools are
@@ -567,6 +590,8 @@ func NewGaiaApp(
 		paramstypes.ModuleName,
 		upgradetypes.ModuleName,
 		vestingtypes.ModuleName,
+		//
+		chattypes.ModuleName,
 	)
 
 	app.mm.RegisterInvariants(&app.CrisisKeeper)

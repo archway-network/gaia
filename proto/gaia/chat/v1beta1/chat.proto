@@ -1,0 +1,38 @@
+syntax = "proto3";
+package gaia.chat.v1beta1;
+
+option go_package = "github.com/cosmos/gaia/x/chat/types";
+option (gogoproto.equal_all) = false;
+option (gogoproto.goproto_getters_all) = false;
+
+import "gogoproto/gogo.proto";
+import "google/protobuf/timestamp.proto";
+
+message TextMessage {
+  string source_chain_id = 1 [
+    (gogoproto.moretags) = "yaml:\"source_chain_id\""
+  ];
+  string destination_chain_id = 2 [
+    (gogoproto.moretags) = "yaml:\"destination_chain_id\""
+  ];
+  uint64 id = 3 [
+    (gogoproto.moretags) = "yaml:\"id\""
+  ];
+  string from_address = 4 [
+    (gogoproto.moretags) = "yaml:\"from_address\""
+  ];
+  string to_address = 5 [
+    (gogoproto.moretags) = "yaml:\"to_address\""
+  ];
+  string text = 6 [
+    (gogoproto.moretags) = "yaml:\"text\""
+  ];
+  bool is_delivered = 7 [
+    (gogoproto.moretags) = "yaml:\"is_delivered\""
+  ];
+  google.protobuf.Timestamp send_at = 8 [
+    (gogoproto.stdtime) = true,
+    (gogoproto.nullable) = false,
+    (gogoproto.moretags) = "yaml:\"send_at\")"
+  ];
+}

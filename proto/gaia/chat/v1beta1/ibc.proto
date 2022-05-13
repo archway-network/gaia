@@ -1,0 +1,18 @@
+syntax = "proto3";
+package gaia.chat.v1beta1;
+
+option go_package = "github.com/cosmos/gaia/x/chat/types";
+option (gogoproto.equal_all) = false;
+option (gogoproto.goproto_getters_all) = false;
+
+import "gogoproto/gogo.proto";
+import "google/protobuf/timestamp.proto";
+
+message TextMessagePacketData {
+  string source_chain_id = 1;
+  uint64 id = 2;
+  string from_address = 3;
+  string to_address = 4;
+  string text = 5;
+  uint64 send_at = 6;
+}

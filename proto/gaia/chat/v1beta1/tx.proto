@@ -1,0 +1,23 @@
+syntax = "proto3";
+package gaia.chat.v1beta1;
+
+option go_package = "github.com/cosmos/gaia/x/chat/types";
+option (gogoproto.equal_all) = false;
+option (gogoproto.goproto_getters_all) = false;
+
+import "gogoproto/gogo.proto";
+import "gaia/chat/v1beta1/chat.proto";
+
+service Msg {
+  rpc SendTextMessage(MsgSendTextMessage) returns (MsgSendTextMessageResponse);
+}
+
+message MsgSendTextMessage {
+  string from_address = 1;
+  string to_address = 2;
+  string ibc_channel_id = 3;
+  string ibc_port_id = 4;
+  string text = 5;
+}
+
+message MsgSendTextMessageResponse {}

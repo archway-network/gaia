@@ -1,0 +1,27 @@
+syntax = "proto3";
+package gaia.chat.v1beta1;
+
+option go_package = "github.com/cosmos/gaia/x/chat/types";
+option (gogoproto.equal_all) = false;
+option (gogoproto.goproto_getters_all) = false;
+
+import "gogoproto/gogo.proto";
+import "google/api/annotations.proto";
+import "gaia/chat/v1beta1/chat.proto";
+
+service Query {
+  rpc History(QueryHistoryRequest) returns (QueryHistoryResponse) {
+    option (google.api.http).get = "/gaia/chat/v1beta1/history";
+  };
+}
+
+message QueryHistoryRequest {
+  string participant1_address = 1;
+  string participant2_address = 2;
+}
+
+message QueryHistoryResponse {
+  repeated TextMessage test_messages = 1 [
+    (gogoproto.nullable) = false
+  ];
+}
